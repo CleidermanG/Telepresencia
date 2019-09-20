@@ -1,0 +1,27 @@
+<!-- <div class="imgcontainer">
+            <img src="img_avatar2.png" alt="Avatar" class="avatar">
+        </div> -->
+
+<div style="padding: 10px ">
+    <embed loop='false' hidden='true' autoplay='true' src="../beep.mp3">
+    <div class="body2 w3-border">
+        <div keep-scroll style="overflow: auto; height:422px;">
+            <div ng-repeat="mensaje in mensajes  track by $index" scroll-item>
+                <div ng-class="messageFromMe(mensaje)">
+                    <img src="{{mensaje.avatar}}" alt="Avatar" style="width:100%;" ng-class="imageFromMe(mensaje)">
+                    <p>{{mensaje.mensaje}}</p>
+                    <p>{{mensaje.displayName}}</p>
+                    <span ng-class="fechaFromMe(mensaje)">{{mensaje.fecha}}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <textarea ng-model="myMessage" placeholder="Ingresa tu mensaje " ng-keypress="sendMessageIntro($event)" required style="width:100%"></textarea>
+        </div>
+        <div class="col-md-12">
+            <button ng-click="sendMenssage()" type="submit ">Enviar</button>
+        </div>
+    </div>
+</div>
