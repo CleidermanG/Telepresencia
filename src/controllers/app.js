@@ -1,20 +1,20 @@
 var app = angular.module('myApp', ['ngFileUpload', 'ngMaterial']);
 
-app.config(['$locationProvider', function($locationProvider) {
+app.config(['$locationProvider', function ($locationProvider) {
     $locationProvider.html5Mode({
         enabled: true,
         requireBase: false
     });
 }]);
-app.service('WebexTeams', function($http, Upload, $sce) {
-    this.users = function() {
+app.service('WebexTeams', function ($http, Upload, $sce) {
+    this.users = function () {
         return $http({
             method: 'GET',
             url: 'http://localhost:7001/users',
             header: { 'Content-Type': 'application/json; charset-utf-8' }
         });
     };
-    this.userScreenshot = function(inspeccion, file) {
+    this.userScreenshot = function (inspeccion, file) {
         console.log(inspeccion.numero);
 
         Upload.upload({
@@ -23,17 +23,17 @@ app.service('WebexTeams', function($http, Upload, $sce) {
                 inspeccion: inspeccion.numero,
                 file: file
             }
-        }).then(function(resp) {
+        }).then(function (resp) {
             console.log('Success ' + resp.config.data.file.name + 'uploaded. Response: ' + resp.data);
-        }, function(resp) {
+        }, function (resp) {
             console.log('Error status: ' + resp.status);
-        }, function(evt) {
+        }, function (evt) {
             var progressPercentage = parseInt(100.0 * evt.loaded / evt.total);
             console.log('progress: ' + progressPercentage + '% ' + evt.config.data.file.name);
         });
     };
 
-    this.userVideo = function(inspeccion, file) {
+    this.userVideo = function (inspeccion, file) {
         return Upload.upload({
             url: 'http://localhost:7001/video',
             data: {
@@ -43,7 +43,7 @@ app.service('WebexTeams', function($http, Upload, $sce) {
         });
     };
 
-    this.userLoadScreen = function(inspeccion) {
+    this.userLoadScreen = function (inspeccion) {
         return $http({
             method: 'GET',
             url: 'http://localhost:7001/image',
@@ -52,7 +52,7 @@ app.service('WebexTeams', function($http, Upload, $sce) {
         });
     };
 
-    this.userLoadVideos = function(inspeccion) {
+    this.userLoadVideos = function (inspeccion) {
         return $http({
             method: 'GET',
             url: 'http://localhost:7001/videos',
@@ -62,7 +62,7 @@ app.service('WebexTeams', function($http, Upload, $sce) {
     };
 
 
-    this.login = function($location) {
+    this.Login = function ($location) {
         return $http({
             method: 'POST',
             url: 'https://api.ciscospark.com/v1/access_token',
@@ -72,24 +72,48 @@ app.service('WebexTeams', function($http, Upload, $sce) {
                 "client_id": "Cd721ccbaa2ab99b47da3368933fbe12a4638ccbc132a01d39cf3cefec05edf6c",
                 "client_secret": "bdc97b96bea78d5ce2006af6a3e22d593b5f61e4386489313ef9cf9ec3f9e001",
                 "code": $location.search()['code'],
-                "redirect_uri": "https://3c9cd59f.ngrok.io/src/views/index2.html"
+                "redirect_uri": "https://037fbd74.ngrok.io/src/views/index.html"
             },
         });
     };
 
+    this.User = function (access_token) {
+        return $http({
+            method: 'GET',
+            url: 'https://api.ciscospark.com/v1/people/me',
+            headers: {
+                'Authorization': 'Bearer ' + access_token
+            }
+        });
+    };
+
+    this.sendMessageObservation = function (data) {
+        return $http.post('http://localhost:7001/observacion', JSON.stringify(data));
+    };
+
+    this.loadObservations = function (inspeccion) {
+        return $http({
+            method: 'GET',
+            url: 'http://localhost:7001/observationsmessages',
+            header: { 'Content-Type': 'application/json; charset-utf-8' },
+            params: { inspeccion: inspeccion.numero }
+        });
+    };
 
 });
 
 
 
 
-app.controller('myCtrl', function($scope, WebexTeams, $http, Upload, $location, $window) {
+app.controller('myCtrl', function ($scope, WebexTeams, $http, Upload, $location, $window) {
 
     $scope.ban = true;
     let webex;
     var blob,
         file
-    $scope.access_token = 'ZGNlMzc0OWItMWMwMC00MTZlLTg5ZDYtM2IwZjQ0MGQ0NjVhMzg1NGVmMWUtMTk3_PF84_consumer'
+
+    $scope.avatarUserLogin = "https://2mingenieria.com.ve/wp-content/uploads/2018/10/kisspng-avatar-user-medicine-surgery-patient-avatar-5acc9f7a7cb983.0104600115233596105109.jpg"
+    $scope.access_token = 'ZjYwNmRkMTYtYjYzMS00ZDA5LWE5ODQtZjg0NGYxODA5YjE2OTA2OGQ1YWEtODk2_PF84_consumer'
     var recorder; // globally accessible
     $scope.toogle = angular.element(document.getElementById('sidebar'));
     $scope.toogle2 = angular.element(document.getElementById('myInput'));
@@ -99,14 +123,14 @@ app.controller('myCtrl', function($scope, WebexTeams, $http, Upload, $location, 
     $scope.hideChat = true;
 
     var users = WebexTeams.users();
-    users.then(function(data) {
+    users.then(function (data) {
         $scope.friends = data.data;
-    }, function(data) {
+    }, function (data) {
         alert('Error al cargar los contactos');
     });
 
     var w, h, ratio;
-    document.getElementById(`remote-view-video`).addEventListener('loadedmetadata', function() {
+    document.getElementById(`remote-view-video`).addEventListener('loadedmetadata', function () {
         video = document.getElementById(`remote-view-video`);
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
@@ -114,11 +138,11 @@ app.controller('myCtrl', function($scope, WebexTeams, $http, Upload, $location, 
 
 
 
-    $scope.cargarScreenshot = function(inspeccion) {
+    $scope.cargarDatosInspeccion = function (inspeccion) {
+        $scope.w3_close();
         $scope.multimediaUrl = "http://localhost:7001/multimedia/" + inspeccion.numero;
         var screenshotUser = WebexTeams.userLoadScreen(inspeccion);
         screenshotUser.then(function successCallback(data) {
-            console.log(data);
             $scope.imagesScreenshot = data.data
         }, function errorCallback(error) {
             console.log(error);
@@ -126,14 +150,48 @@ app.controller('myCtrl', function($scope, WebexTeams, $http, Upload, $location, 
 
         var videosUser = WebexTeams.userLoadVideos(inspeccion);
         videosUser.then(function successCallback(dataVideo) {
-            console.log(dataVideo);
             $scope.videosInspeccion = dataVideo.data
         }, function errorCallback(error) {
             console.log(error);
         });
+
+        $scope.loadObservations (inspeccion);
+
+
+        $scope.sendObservation = function (keyEvent) {
+            if (keyEvent.which === 13) {
+                $scope.tets();
+            }
+        }
+
+        $scope.tets = function () {
+            $scope.data = {
+                inspeccion: inspeccion.numero,
+                observacion: $scope.myMessageObservation
+            };
+            var observation = WebexTeams.sendMessageObservation($scope.data);
+            observation.then(function successCallback(data) {
+                alert('Se agregó una observación a la inspección ' + inspeccion.numero)
+            }, function errorCallback(error) {
+                console.log(error);
+            });
+            $scope.myMessageObservation = ' '
+            $scope.loadObservations (inspeccion);
+        }
     }
 
-    $scope.llamar = function(inspeccion) {
+    $scope.loadObservations = function (inspeccion) {
+        var observacion = WebexTeams.loadObservations(inspeccion);
+        observacion.then(function successCallback(data) {
+           
+           console.log(data);
+           
+        });
+    }
+
+
+
+    $scope.llamar = function (inspeccion) {
         $scope.w3_close();
         document.getElementById('btnColgar').setAttribute("style", "visibility: visible;");
         document.getElementById('btnScreen').setAttribute("style", "visibility: visible;");
@@ -142,22 +200,23 @@ app.controller('myCtrl', function($scope, WebexTeams, $http, Upload, $location, 
         $scope.bindCallEvents(call, inspeccion);
     };
 
-    $scope.connection = function() {
-
-
-
-        var login = WebexTeams.login($location);
-        login.then(function(data) {
-                console.log(data);
-                $scope.connect(data.data.access_token);
-            })
-            .catch(function(error) {
+    $scope.connection = function () {
+        var login = WebexTeams.Login($location);
+        login.then(function (data) {
+            console.log(data.data.access_token);
+            
+            
+            $scope.connect(data.data.access_token);
+        })
+            .catch(function (error) {
                 console.log(error);
-                window.location.href = "https://api.ciscospark.com/v1/authorize?client_id=Cd721ccbaa2ab99b47da3368933fbe12a4638ccbc132a01d39cf3cefec05edf6c&response_type=code&redirect_uri=https%3A%2F%2F3c9cd59f.ngrok.io%2Fsrc%2Fviews%2Findex2.html&scope=spark%3Aall%20spark%3Akms&state=set_state_here"
+                window.location.href = "https://api.ciscospark.com/v1/authorize?client_id=Cd721ccbaa2ab99b47da3368933fbe12a4638ccbc132a01d39cf3cefec05edf6c&response_type=code&redirect_uri=https%3A%2F%2F037fbd74.ngrok.io%2Fsrc%2Fviews%2Findex.html&scope=spark%3Aall%20spark%3Akms&state=set_state_here"
             });
     }
 
-    $scope.logout = function() {
+
+
+    $scope.logout = function () {
         if (webex.canAuthorize) {
             // $window.location.href = "https://3c9cd59f.ngrok.io/src/views/index2.html";
             webex.logout();
@@ -168,11 +227,11 @@ app.controller('myCtrl', function($scope, WebexTeams, $http, Upload, $location, 
         }
     }
 
-    $scope.connect = function(access_token) {
-        // console.log('succes: ' + access_token);
+    $scope.connect = function (access_token) {
         alert("Conexión establecida ya puedes iniciar las video llamadas");
         spark = ciscospark.init({
             credentials: {
+
                 access_token: $scope.access_token
             }
         });
@@ -183,14 +242,23 @@ app.controller('myCtrl', function($scope, WebexTeams, $http, Upload, $location, 
                 throw err;
             });
         $scope.authorize($scope.access_token);
+        var user = WebexTeams.User($scope.access_token);
+        user.then(function (user) {
+            if (user.data.avatar) {
+                $scope.avatarUserLogin = user.data.avatar;
+            }
+            $scope.userLoginName = user.data.nickName;
+            $scope.userLoginEmail = user.data.emails[0];
+
+        });
     }
 
 
 
-    $scope.authorize = function(access_token) {
+    $scope.authorize = function (access_token) {
         webex = window.webex = Webex.init({
             credentials: {
-                access_token: access_token
+                access_token: $scope.access_token
             }
         });
 
@@ -200,7 +268,9 @@ app.controller('myCtrl', function($scope, WebexTeams, $http, Upload, $location, 
         return Promise.reject(webex.canAuthorize);
     }
 
-    $scope.bindCallEvents = function(call, inspeccion) {
+
+
+    $scope.bindCallEvents = function (call, inspeccion) {
         $scope.call = call;
         $scope.inspeccion = inspeccion;
         console.log($scope.inspeccion);
@@ -212,7 +282,7 @@ app.controller('myCtrl', function($scope, WebexTeams, $http, Upload, $location, 
 
         call.once(`remoteMediaStream:change`, () => {
             document.getElementById(`remote-view-video`).srcObject = call.remoteMediaStream;
-            document.getElementById(`remote-view-video`).onloadedmetadata = function() {
+            document.getElementById(`remote-view-video`).onloadedmetadata = function () {
                 recorder = RecordRTC($scope.call.remoteMediaStream, {
                     type: 'video',
                 });
@@ -221,8 +291,7 @@ app.controller('myCtrl', function($scope, WebexTeams, $http, Upload, $location, 
 
         });
         call.on(`connected`, () => {
-            document.getElementById('btnScreen').setAttribute("style", "visibility: visible;");
-
+            document.getElementById('btnScreen').setAttribute("style", "visibility: visible;"); s
         });
         call.on(`disconnected`, () => {
             if (recorder != null && recorder != undefined)
@@ -233,7 +302,7 @@ app.controller('myCtrl', function($scope, WebexTeams, $http, Upload, $location, 
             document.getElementById('btnScreen').setAttribute("style", "visibility: hidden;");
         });
 
-        $scope.dataURItoBlob = function(dataURI) {
+        $scope.dataURItoBlob = function (dataURI) {
             // convert base64/URLEncoded data component to raw binary data held in a string
             var byteString;
             if (dataURI.split(',')[0].indexOf('base64') >= 0)
@@ -253,8 +322,8 @@ app.controller('myCtrl', function($scope, WebexTeams, $http, Upload, $location, 
         }
 
 
-        $scope.screenshot = function() {
-            $scope.cargarScreenshot(inspeccion);
+        $scope.screenshot = function () {
+            $scope.cargarDatosInspeccion(inspeccion);
             var dataURL = canvas.toDataURL()
             var context = canvas.getContext('2d');
             context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
@@ -265,10 +334,8 @@ app.controller('myCtrl', function($scope, WebexTeams, $http, Upload, $location, 
             });
 
             WebexTeams.userScreenshot(inspeccion, file);
-            $scope.cargarScreenshot(inspeccion);
+            $scope.cargarDatosInspeccion(inspeccion);
         }
-
-
 
         function stopRecordingCallback() {
             var fileName = Math.random() * (100000000 - 1000000) + 1000000;
@@ -278,10 +345,10 @@ app.controller('myCtrl', function($scope, WebexTeams, $http, Upload, $location, 
             });
 
             var video = WebexTeams.userVideo($scope.inspeccion.numero, file);
-            video.then(function(response) {
-                    alert(response.data)
-                }),
-                function() {
+            video.then(function (response) {
+                alert(response.data)
+            }),
+                function () {
                     recorder.destroy();
                     recorder = null;
                 };
@@ -295,7 +362,7 @@ app.controller('myCtrl', function($scope, WebexTeams, $http, Upload, $location, 
 
     }
 
-    $scope.colgar = function() {
+    $scope.colgar = function () {
 
         document.getElementById('btnColgar').setAttribute("style", "visibility: hidden;");
         document.getElementById('btnScreen').setAttribute("style", "visibility: hidden;");
@@ -320,7 +387,7 @@ app.controller('myCtrl', function($scope, WebexTeams, $http, Upload, $location, 
 
     // document.getElementById("remote-view-video").controls = true;
 
-    $scope.chat = function(inspeccion) {
+    $scope.chat = function (inspeccion) {
         $scope.hideChat = !$scope.hideChat;
 
         if ($scope.hideChat == false) {
@@ -332,7 +399,7 @@ app.controller('myCtrl', function($scope, WebexTeams, $http, Upload, $location, 
                 numero: inspeccion.numero,
                 email: inspeccion.email
             };
-            $scope.initChat($scope.inspeccion);
+            $scope.initChat($scope.inspeccion, $scope.userLoginEmail);
         } else {
             document.getElementById("videoTam").style.width = "60%";
             document.getElementById("imagesTam").style.width = "40%";
@@ -340,7 +407,7 @@ app.controller('myCtrl', function($scope, WebexTeams, $http, Upload, $location, 
     };
 
 
-    $scope.w3_open = function() {
+    $scope.w3_open = function () {
         if ($scope.ban) {
             $scope.ban = false
             document.getElementById("main").style.marginLeft = "25%";
@@ -353,7 +420,7 @@ app.controller('myCtrl', function($scope, WebexTeams, $http, Upload, $location, 
         }
     }
 
-    $scope.w3_close = function() {
+    $scope.w3_close = function () {
         document.getElementById("main").style.marginLeft = "0%";
         document.getElementById("mySidebar").style.display = "none";
         document.getElementById("openNav").style.display = "inline-block";
